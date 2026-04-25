@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #050505;
+  --color-card: #0a0a0a;
+  --color-accent: #10b981;
+  --color-accent-glow: rgba(16, 185, 129, 0.2);
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #a1a1aa;
+  --color-border: #1a1a1a;
+  
+  /* Mapping original names to new theme so app doesn't crash */
+  --bg-bg: #050505;
+  --bg-card: #0a0a0a;
+  --text-primary: #ffffff;
+  --text-secondary: #a1a1aa;
+}
+
+@layer base {
+  body {
+    @apply bg-bg text-text-primary;
+    background-color: #050505;
+    font-family: 'Outfit', sans-serif;
+  }
+}
+
+/* Custom Professional Styles */
+.glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  border: 1px solid #1a1a1a;
+  border-radius: 24px;
+}
+
+.btn-primary {
+  background: #10b981;
+  color: #000;
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.2);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade {
+  animation: fadeIn 0.5s ease forwards;
+}
