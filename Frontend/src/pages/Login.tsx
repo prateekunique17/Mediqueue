@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { motion } from 'motion/react';
 import { toast } from 'sonner';
-import { Mail, Lock, Loader2 } from 'lucide-react';
+import { Loader2, Mail, Lock, ArrowRight } from 'lucide-react';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -12,77 +11,111 @@ const Login: React.FC = () => {
   const { signInWithEmail } = useAuth();
   const navigate = useNavigate();
 
-  const handleAuthSuccess = (profile: any) => {
-    if (profile.role === 'hospital') navigate('/hospital');
-    else if (profile.role === 'admin') navigate('/admin');
-    else navigate('/dashboard');
-  };
-
-  const handleEmailLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      toast.error("Please fill all fields");
+      toast.error("Please enter credentials");
       return;
     }
     setLoading(true);
     try {
       const profile = await signInWithEmail(email, password);
-      if (profile) handleAuthSuccess(profile);
+      if (profile.role === 'admin') navigate('/admin');
+      else if (profile.role === 'hospital') navigate('/hospital');
+      else navigate('/dashboard');
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message || "Authentication failed");
     } finally {
       setLoading(false);
     }
   };
 
-
   return (
-    <div className="min-h-[calc(100vh-64px)] flex items-center justify-center p-4 bg-bg">
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-md bg-card rounded-[2.5rem] p-10 shadow-2xl border border-border"
-      >
-        <div className="text-center mb-10">
-          <h1 className="text-3xl font-black text-text-primary tracking-tight">Welcome Back</h1>
-          <p className="text-text-secondary font-medium mt-2">Access your triage dashboard</p>
+    <div className="min-h-[calc(100vh-64px)] w-full flex items-center justify-center p-6 bg-surface-container-low antialiased">
+      <div className="w-full max-w-[440px] animate-fade">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary text-on-primary mb-4 shadow-lg shadow-primary/20">
+            <Lock className="w-6 h-6" />
+          </div>
+          <h1 className="font-headline text-3xl font-extrabold text-primary tracking-tight">MEDIQUEUE</h1>
+          <p className="font-body text-on-surface-variant mt-2 text-sm font-medium">Clinical Precision Guaranteed.</p>
         </div>
 
-        <form onSubmit={handleEmailLogin} className="space-y-4 mb-6">
-          <div className="relative">
-            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary" />
-            <input
-              type="email"
-              placeholder="Email Address"
-              className="w-full pl-12 pr-4 py-4 bg-bg border border-border rounded-xl text-text-primary focus:border-accent outline-none transition"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+        <div className="bg-white rounded-3xl border border-outline-variant ambient-shadow-card p-8 md:p-10">
+          <div className="mb-8">
+            <h2 className="font-headline text-2xl font-bold text-on-surface">Sign In</h2>
+            <p className="font-body text-sm text-on-surface-variant mt-1">Enter your credentials. System auto-detects role.</p>
           </div>
-          <div className="relative">
-            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary" />
-            <input
-              type="password"
-              placeholder="Password"
-              className="w-full pl-12 pr-4 py-4 bg-bg border border-border rounded-xl text-text-primary focus:border-accent outline-none transition"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-4 bg-accent text-white rounded-xl font-black text-sm uppercase tracking-widest hover:brightness-110 transition shadow-lg flex items-center justify-center gap-2"
-          >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Sign In"}
-          </button>
-        </form>
 
+          <form onSubmit={handleLogin} className="flex flex-col gap-6">
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-black text-outline uppercase tracking-widest ml-1" htmlFor="email">Email Address</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-outline">
+                  <Mail className="w-5 h-5" />
+                </div>
+                <input 
+                  className="w-full h-[52px] bg-surface-container-low border border-outline-variant rounded-xl pl-12 pr-4 py-2 font-body text-on-surface placeholder:text-outline focus:outline-none focus:border-primary transition-all font-semibold" 
+                  id="email" 
+                  type="email"
+                  placeholder="dr.smith@citygeneral.org"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
 
-        <p className="mt-8 text-center text-sm text-text-secondary font-medium">
-          Don't have an account? <button onClick={() => navigate('/signup')} className="text-accent font-bold hover:underline">Sign up</button>
-        </p>
-      </motion.div>
+            <div className="flex flex-col gap-2">
+              <div className="flex justify-between items-center px-1">
+                <label className="text-[10px] font-black text-outline uppercase tracking-widest" htmlFor="password">Password</label>
+                <a className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline" href="#">Forgot password?</a>
+              </div>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-outline">
+                  <Lock className="w-5 h-5" />
+                </div>
+                <input 
+                  className="w-full h-[52px] bg-surface-container-low border border-outline-variant rounded-xl pl-12 pr-4 py-2 font-body text-on-surface placeholder:text-outline focus:outline-none focus:border-primary transition-all font-semibold tracking-widest" 
+                  id="password" 
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <button 
+                disabled={loading}
+                className="w-full h-[56px] bg-primary text-on-primary font-bold rounded-xl shadow-lg shadow-primary/20 hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2" 
+                type="submit"
+              >
+                {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : (
+                  <>
+                    <span>Authenticate Securely</span>
+                    <ArrowRight className="w-5 h-5" />
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="text-center mt-4">
+              <p className="font-body text-sm text-on-surface-variant font-medium">
+                Don't have an account? <Link to="/signup" className="text-primary font-bold hover:underline ml-1">Sign Up</Link>
+              </p>
+            </div>
+          </form>
+        </div>
+
+        <div className="mt-8 text-center">
+          <p className="font-body text-[10px] font-black text-outline uppercase tracking-[0.2em]">
+            Need system access? <a className="text-primary hover:underline" href="#">Contact IT Support</a>
+          </p>
+        </div>
+      </div>
     </div>
   );
 };

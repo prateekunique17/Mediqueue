@@ -1,5 +1,5 @@
-// This file secure handles communication with our FastAPI Backend
-const API_BASE = "http://localhost:8000";
+// This file handles communication with our local LM Studio Backend
+const API_BASE = "";
 
 export async function generateAiForm(symptoms: string) {
   const response = await fetch(`${API_BASE}/api/ai/generate-form`, {

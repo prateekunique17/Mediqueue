@@ -3,6 +3,10 @@
 .vscode/
 .idea/
 *.log
+*.zip
+
+# Project Specific
+stitch_mediqueue_ai_medical_platform/
 
 # Frontend (Node.js)
 Frontend/node_modules/
@@ -16,6 +20,7 @@ yarn-error.log*
 
 # Backend (Python)
 backend/__pycache__/
+backend/**/*.pyc
 backend/*.py[cod]
 backend/*$py.class
 backend/venv/

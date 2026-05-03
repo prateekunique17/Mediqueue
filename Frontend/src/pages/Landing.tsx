@@ -1,119 +1,87 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'motion/react';
-import { Activity, ShieldCheck, Clock, Users, ExternalLink, MapPin } from 'lucide-react';
 
 const Landing: React.FC = () => {
   return (
-    <div className="bg-bg">
+    <div className="bg-background text-on-background font-body antialiased">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-bg py-24 px-4">
-        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
-          <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="space-y-8"
-          >
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-accent/10 text-accent rounded-full text-xs font-bold tracking-widest uppercase border border-accent/20">
-              <Activity className="w-3.5 h-3.5" />
-              AI-Powered Triage Monitor
-            </div>
-            <h1 className="text-6xl lg:text-8xl font-black tracking-tighter text-text-primary leading-[0.9]">
-              Skip the <br />
-              <span className="text-accent underline decoration-accent/30 underline-offset-8">Waiting.</span>
+      <section className="relative pt-2xl pb-3xl px-6 lg:px-24 overflow-hidden">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-2xl items-center relative z-10">
+          <div className="flex flex-col gap-lg animate-fade">
+            <h1 className="font-headline text-5xl lg:text-6xl font-extrabold text-on-surface leading-tight">
+              Skip the <span className="text-primary">Queue</span>
             </h1>
-            <p className="text-lg text-text-secondary max-w-lg leading-relaxed font-medium">
-              MEDIQUEUE uses Google Gemini to analyze your symptoms, assign urgency, and match you with the right specialist instantly.
+            <p className="font-body text-lg lg:text-xl text-on-surface-variant max-w-lg leading-relaxed">
+              AI-powered medical pre-diagnosis and smart appointment system. Get the right care, at the right time, without the wait.
             </p>
-            <div className="flex flex-wrap gap-5 pt-4">
-              <Link to="/signup" className="px-10 py-4 bg-accent text-white rounded-xl font-extrabold text-lg hover:brightness-110 transition shadow-2xl shadow-accent/20">
-                Start Triage
+            <div className="flex flex-wrap gap-md mt-sm">
+              <Link 
+                to="/signup" 
+                className="btn-primary bg-primary text-on-primary font-semibold px-8 py-4 rounded-lg hover:bg-primary/90 text-center transition-all shadow-lg"
+              >
+                Book Appointment
               </Link>
-              <Link to="/login" className="px-10 py-4 bg-card text-text-primary border border-border rounded-xl font-extrabold text-lg hover:border-accent transition">
-                Hospital Login
+              <Link 
+                to="/signup" 
+                className="bg-transparent border border-outline text-on-surface font-semibold px-8 py-4 rounded-lg hover:bg-surface-container-low transition-colors text-center"
+              >
+                Join as Hospital
               </Link>
             </div>
-          </motion.div>
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="hidden lg:block relative"
-          >
-             <div className="aspect-[4/5] bg-card rounded-[3rem] border border-border p-8 overflow-hidden relative shadow-2xl">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent to-transparent"></div>
-                <div className="space-y-6">
-                   <div className="flex justify-between items-center">
-                      <div className="h-6 w-32 bg-border rounded-lg"></div>
-                      <div className="badge-emergency">CRITICAL</div>
-                   </div>
-                   <div className="h-4 w-3/4 bg-border/50 rounded"></div>
-                   <div className="h-4 w-1/2 bg-border/50 rounded"></div>
-                   <div className="p-6 border border-border bg-bg/50 rounded-2xl flex items-center gap-4">
-                      <div className="w-12 h-12 bg-accent/20 rounded-xl flex items-center justify-center text-accent">
-                         <div className="w-6 h-6 bg-accent rounded-full animate-pulse"></div>
-                      </div>
-                      <div>
-                         <div className="h-4 w-24 bg-border rounded mb-2"></div>
-                         <div className="h-3 w-32 bg-border/50 rounded"></div>
-                      </div>
-                   </div>
-                   <div className="h-48 w-full bg-bg rounded-2xl border border-border flex items-center justify-center text-text-secondary">
-                      <div className="text-center">
-                         <Activity className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                         <span className="text-xs font-bold tracking-widest uppercase opacity-30 tracking-widest">Scanning Symptoms...</span>
-                      </div>
-                   </div>
-                </div>
-             </div>
-          </motion.div>
+          </div>
+          
+          <div className="relative w-full aspect-square animate-slide-in">
+             <div className="absolute inset-0 bg-primary/5 rounded-full blur-3xl -z-10"></div>
+             <img 
+               src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=800&q=80" 
+               alt="Medical professional using tablet" 
+               className="w-full h-full object-cover rounded-[2rem] ambient-shadow-float border-4 border-white"
+             />
+          </div>
+        </div>
+        
+        {/* Decorative background element */}
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-surface-container-low rounded-bl-[120px] -z-0"></div>
+      </section>
+
+      {/* Problem Section */}
+      <section className="py-3xl px-6 lg:px-24 bg-surface-container-low">
+        <div className="max-w-7xl mx-auto text-center mb-2xl animate-fade">
+          <h2 className="font-headline text-3xl lg:text-4xl font-bold text-on-surface mb-sm">The Waiting Room is Obsolete</h2>
+          <p className="font-body text-on-surface-variant max-w-2xl mx-auto">Traditional medical queues lead to frustration and potential exposure. Mediqueue reimagines access to care through intelligent triage.</p>
+        </div>
+        
+        <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-8">
+          {[
+            { icon: 'smart_toy', title: 'AI Diagnostics', desc: 'Symptom analysis powered by advanced LLMs.' },
+            { icon: 'bolt', title: 'Instant Triage', desc: 'Prioritize emergencies and redirect routine care.' },
+            { icon: 'verified', title: 'Verified Nodes', desc: 'Secure connection to licensed healthcare facilities.' }
+          ].map((feature, i) => (
+            <div key={i} className="ambient-shadow-card p-8 flex flex-col items-center text-center group hover:border-primary transition-colors">
+              <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-6 group-hover:bg-primary group-hover:text-white transition-colors">
+                <span className="material-symbols-outlined text-[32px]">{feature.icon}</span>
+              </div>
+              <h3 className="font-headline text-xl font-bold mb-3">{feature.title}</h3>
+              <p className="font-body text-sm text-on-surface-variant leading-relaxed">{feature.desc}</p>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* Hospitals Section */}
-      <section className="py-24 px-4 bg-card/40 border-y border-border">
-         <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
-               <div className="space-y-3">
-                  <h2 className="text-4xl font-extrabold text-text-primary tracking-tight">Vetted Healthcare Facilities</h2>
-                  <p className="text-text-secondary font-medium text-lg">Trusted hospitals ready to receive your triage reports.</p>
-               </div>
-               <Link to="/signup" className="text-accent font-bold flex items-center gap-2 hover:text-white transition group">
-                  Add your Facility <ExternalLink size={18} className="group-hover:translate-x-1 transition" />
-               </Link>
-            </div>
-            
-            <div className="grid md:grid-cols-3 gap-10">
-               {[
-                  { name: 'City Central General', location: 'Downtown', specialty: 'Multi-speciality' },
-                  { name: 'St. Mary Childrens', location: 'North Side', specialty: 'Pediatrics' },
-                  { name: 'Heart & Vascular Inst.', location: 'East Side', specialty: 'Cardiology' }
-               ].map((h, i) => (
-                  <motion.div 
-                    key={i} 
-                    whileHover={{ y: -5 }}
-                    className="group cursor-pointer bg-card border border-border rounded-[2rem] p-4 p-4 shadow-xl"
-                  >
-                     <div className="aspect-video bg-bg rounded-2xl mb-6 overflow-hidden relative border border-border">
-                        <img 
-                          src={`https://picsum.photos/seed/hosp-${i}/800/450?grayscale`} 
-                          alt="Hospital" 
-                          referrerPolicy="no-referrer"
-                          className="w-full h-full object-cover group-hover:scale-105 transition duration-700 opacity-60" 
-                        />
-                        <div className="absolute top-4 right-4 bg-accent text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-accent/20">Verified</div>
-                     </div>
-                     <div className="px-2 pb-2">
-                        <h3 className="text-xl font-bold text-text-primary group-hover:text-accent transition">{h.name}</h3>
-                        <p className="text-text-secondary font-medium flex items-center gap-2 text-sm mt-2">
-                           <MapPin size={14} className="text-accent" />
-                           {h.location} • {h.specialty}
-                        </p>
-                     </div>
-                  </motion.div>
-               ))}
-            </div>
-         </div>
-      </section>
+      {/* Footer */}
+      <footer className="w-full py-12 px-6 bg-white border-t border-outline-variant">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+          <div className="flex flex-col items-center md:items-start gap-4">
+            <span className="font-headline text-2xl font-extrabold text-primary">MEDIQUEUE</span>
+            <p className="text-xs text-outline font-medium">© 2024 MEDIQUEUE AI. Clinical Precision Guaranteed.</p>
+          </div>
+          <nav className="flex flex-wrap gap-8 justify-center">
+            {['Privacy Policy', 'Terms of Service', 'HIPAA Compliance', 'Contact Support'].map(link => (
+              <a key={link} href="#" className="text-sm font-semibold text-on-surface-variant hover:text-primary transition-colors">{link}</a>
+            ))}
+          </nav>
+        </div>
+      </footer>
     </div>
   );
 };

@@ -1,59 +1,79 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg: #050505;
-  --color-card: #0a0a0a;
-  --color-accent: #10b981;
-  --color-accent-glow: rgba(16, 185, 129, 0.2);
-  --color-text-primary: #ffffff;
-  --color-text-secondary: #a1a1aa;
-  --color-border: #1a1a1a;
+  --color-primary: #004ac6;
+  --color-primary-container: #2563eb;
+  --color-on-primary: #ffffff;
+  --color-on-primary-container: #eeefff;
+  --color-primary-fixed: #dbe1ff;
+  --color-primary-fixed-dim: #b4c5ff;
   
-  /* Mapping original names to new theme so app doesn't crash */
-  --bg-bg: #050505;
-  --bg-card: #0a0a0a;
-  --text-primary: #ffffff;
-  --text-secondary: #a1a1aa;
+  --color-secondary: #006e2f;
+  --color-secondary-container: #6bff8f;
+  --color-on-secondary: #ffffff;
+  --color-on-secondary-container: #007432;
+  
+  --color-error: #ba1a1a;
+  --color-error-container: #ffdad6;
+  --color-on-error: #ffffff;
+  --color-on-error-container: #93000a;
+  
+  --color-surface: #f8f9ff;
+  --color-on-surface: #0b1c30;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #eff4ff;
+  --color-surface-container: #e5eeff;
+  --color-surface-container-high: #dce9ff;
+  --color-surface-container-highest: #d3e4fe;
+  --color-on-surface-variant: #434655;
+  --color-outline: #737686;
+  --color-outline-variant: #c3c6d7;
+  
+  --color-background: #f8f9ff;
+  --color-on-background: #0b1c30;
+  
+  --font-headline: "Manrope", sans-serif;
+  --font-body: "Inter", sans-serif;
+
+  --animate-fade: fade 0.5s ease-out;
+  --animate-slide-up: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-scale-in: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+
+  @keyframes fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  @keyframes scaleIn {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
 }
 
 @layer base {
   body {
-    @apply bg-bg text-text-primary;
-    background-color: #050505;
-    font-family: 'Outfit', sans-serif;
+    @apply bg-background text-on-background antialiased font-body m-0 p-0;
+  }
+  
+  /* Prevent width collapse on common containers */
+  main {
+    @apply block w-full;
   }
 }
 
-/* Custom Professional Styles */
-.glass-card {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(12px);
-  border: 1px solid #1a1a1a;
-  border-radius: 24px;
-}
+@layer components {
+  .btn-primary {
+    @apply bg-primary text-on-primary font-bold rounded-xl transition-all active:scale-[0.98] hover:brightness-110 disabled:opacity-50;
+  }
+  
+  .ambient-shadow-card {
+    @apply shadow-[0_4px_15px_-3px_rgba(29,37,84,0.04),0_4px_6px_-4px_rgba(29,37,84,0.02)] border border-outline-variant rounded-3xl bg-white;
+  }
 
-.btn-primary {
-  background: #10b981;
-  color: #000;
-  font-weight: 600;
-  padding: 12px 24px;
-  border-radius: 12px;
-  border: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.2);
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.1);
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fade {
-  animation: fadeIn 0.5s ease forwards;
+  .ambient-shadow-elevated {
+    @apply shadow-[0_20px_50px_-12px_rgba(0,74,198,0.08)] border border-outline-variant/50 rounded-[2.5rem] bg-white;
+  }
 }

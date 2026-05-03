@@ -3,65 +3,52 @@ from fastapi import APIRouter, HTTPException
 import os
 import json
 import httpx
+import uuid
 from database import supabase
 from dotenv import load_dotenv
 
 load_dotenv(override=True)
-api_key = os.getenv("GEMINI_API_KEY", "").strip()
+LM_STUDIO_URL = os.getenv("LM_STUDIO_URL", "http://127.0.0.1:1234").strip()
+LM_STUDIO_MODEL = os.getenv("LM_STUDIO_MODEL", "").strip()
 
 router = APIRouter(prefix="/api/ai", tags=["AI"])
 
-@router.get("/diagnostic/models")
-async def list_available_models():
-    """Diagnostic tool to see exactly what models this key can use."""
-    url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
-    async with httpx.AsyncClient() as client:
-        response = await client.get(url)
-        return response.json()
-
 async def call_ai(prompt: str):
-    # If 2.5 and 2.0 are busy, we will try the most common stable names
-    models_to_try = [
-        "gemini-2.5-flash", 
-        "gemini-2.0-flash", 
-        "gemini-1.5-flash",
-        "gemini-1.5-flash-8b", # 8B is often more available
-        "gemini-pro"
-    ]
+    """Exclusively calls LM Studio for AI processing."""
+    url = f"{LM_STUDIO_URL}/v1/completions"
     
-    last_error = ""
-    for model_name in models_to_try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
-        
-        # Increased retries for 503
-        for attempt in range(3):
-            async with httpx.AsyncClient(timeout=40.0) as client:
-                try:
-                    print(f"[AI] Trying {model_name} (Attempt {attempt+1})...")
-                    response = await client.post(url, json={
-                        "contents": [{"parts": [{"text": prompt}]}],
-                        "generationConfig": { "response_mime_type": "application/json" }
-                    })
-                    
-                    if response.status_code in [503, 429]:
-                        print(f"[-] {model_name} busy. Waiting 3s...")
-                        await asyncio.sleep(3)
-                        continue 
-                    
-                    if response.status_code == 404:
-                        break # Try next model
-                        
-                    if response.status_code != 200:
-                        print(f"[!] {model_name} error {response.status_code}: {response.text}")
-                        break
-                        
-                    data = response.json()
-                    print(f"[+] SUCCESS! Using {model_name}")
-                    return data['candidates'][0]['content']['parts'][0]['text']
-                except Exception as e:
-                    break
+    payload = {
+        "model": LM_STUDIO_MODEL,
+        "prompt": prompt,
+        "max_tokens": 1024,
+        "temperature": 0.7,
+        "stream": False
+    }
 
-    raise Exception("All models are currently overloaded by Google. Please try again in 1 minute.")
+    try:
+        print(f"[AI] Calling Local LM Studio (Gemma-4-e4b)...")
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(url, json=payload)
+            
+            if response.status_code != 200:
+                print(f"[!] LM Studio Error: {response.text}")
+                raise HTTPException(status_code=503, detail="LM Studio Service Error")
+
+            data = response.json()
+            text = data['choices'][0]['text'].strip()
+            
+            # Clean up potential markdown formatting if model returns it
+            if "```json" in text:
+                text = text.split("```json")[1].split("```")[0].strip()
+            elif "```" in text:
+                text = text.split("```")[1].split("```")[0].strip()
+            
+            print(f"[+] Success from LM Studio")
+            return text
+            
+    except Exception as e:
+        print(f"[!] AI Connection Failed: {e}")
+        raise HTTPException(status_code=503, detail="Local AI Server is down. Please start LM Studio.")
 
 @router.post("/generate-form")
 async def generate_form(data: dict):
@@ -71,7 +58,7 @@ async def generate_form(data: dict):
     
     STRICT RULES:
     1. Return ONLY a valid JSON object.
-    2. Types allowed: "yesno", "severity" (scale 1-5), or "checkbox".
+    2. Types allowed: "yesno", "severity" (scale 1-10), or "checkbox".
     3. If type is "checkbox", you MUST include an "options" key with a list of 4 relevant strings.
     
     JSON Schema:
@@ -83,45 +70,66 @@ async def generate_form(data: dict):
     """
     try:
         raw_json = await call_ai(prompt)
+        # Handle cases where model adds leading/trailing text
+        start = raw_json.find('{')
+        end = raw_json.rfind('}') + 1
+        if start != -1 and end != -1:
+            raw_json = raw_json[start:end]
+            
         return json.loads(raw_json)
     except Exception as e:
         print(f"[ERROR] generate-form failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-# ... rest of the code stays the same ...
+        raise HTTPException(status_code=500, detail="AI failed to generate clinical form.")
 
 @router.post("/analyze-triage")
 async def analyze_triage(data: dict):
     prob = data.get("primaryProblem", "Unknown")
     ans = data.get("answers", {})
-    prompt = f"Analyze: {prob} with answers: {json.dumps(ans)}. Return JSON: urgency, doctorType, summary (array)."
+    prompt = f"""
+    Analyze the following patient data:
+    Primary Complaint: {prob}
+    Detailed Answers: {json.dumps(ans)}
+    
+    Return a clinical triage report in JSON format.
+    Fields: 
+    - urgency: (EMERGENCY, HIGH, MODERATE, ROUTINE)
+    - doctorType: (e.g. Cardiologist, General Physician)
+    - summary: (An array of 3-4 medical observations)
+    
+    Format:
+    {{
+      "urgency": "...",
+      "doctorType": "...",
+      "summary": ["...", "...", "..."]
+    }}
+    """
     try:
         raw_json = await call_ai(prompt)
+        # Handle cases where model adds leading/trailing text
+        start = raw_json.find('{')
+        end = raw_json.rfind('}') + 1
+        if start != -1 and end != -1:
+            raw_json = raw_json[start:end]
+            
         report = json.loads(raw_json)
         if isinstance(report.get("summary"), str): report["summary"] = [report["summary"]]
         return report
     except Exception as e:
         print(f"[ERROR] analyze-triage failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-import uuid
+        raise HTTPException(status_code=500, detail="AI failed to process triage analysis.")
 
 @router.post("/save-triage")
 async def save_triage(data: dict):
     if not supabase: return {"status": "skipped"}
     
-    # Ensure patient_id is a valid UUID if it's a guest
     p_id = data.get("patient_id")
-    
     if p_id == "guest_user" or not p_id:
-        # Instead of faking a user, let's find an ALREADY VALID user in your database 
-        # (like your admin or hospital account) to attach this test triage to.
         try:
             existing_users = supabase.table("users").select("uid").execute()
-            if existing_users.data and len(existing_users.data) > 0:
+            if existing_users.data:
                 p_id = existing_users.data[0]["uid"]
             else:
-                p_id = str(uuid.uuid4()) # Fallback
+                p_id = str(uuid.uuid4())
         except:
             p_id = str(uuid.uuid4()) 
 
@@ -137,9 +145,8 @@ async def save_triage(data: dict):
         }
     }
     try:
-        # MiniSupabase insert() already executes the request
-        response = supabase.table("triage_requests").insert(payload)
-        return {"status": "success", "data": response.data}
+        supabase.table("triage_requests").insert(payload)
+        return {"status": "success"}
     except Exception as e:
         print(f"SAVE ERROR: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to persist triage record.")
