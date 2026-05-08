@@ -13,8 +13,11 @@ import {
   ShieldCheck,
   Send,
   User,
-  HeartPulse
+  HeartPulse,
+  Building2,
+  ChevronDown
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const AppointmentRequest: React.FC = () => {
   const navigate = useNavigate();
@@ -29,6 +32,15 @@ const AppointmentRequest: React.FC = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [triageResult, setTriageResult] = useState<any>(null);
+  const [hospitals, setHospitals] = useState<any[]>([]);
+  const [selectedHospitalId, setSelectedHospitalId] = useState('');
+
+  useEffect(() => {
+    fetch('/api/hospital/list')
+      .then(res => res.json())
+      .then(data => setHospitals(data))
+      .catch(err => console.error("Failed to fetch hospitals:", err));
+  }, []);
 
   // Handle quick check from dashboard
   useEffect(() => {
@@ -66,21 +78,37 @@ const AppointmentRequest: React.FC = () => {
         const result = await analyzeTriage(symptoms, newAnswers);
         setTriageResult(result);
         setStep('result');
-        
-        await saveTriageRequest({
-          patient_id: user?.id || 'guest_user',
-          symptoms,
-          answers: newAnswers,
-          urgency: result.urgency,
-          doctor_type: result.doctorType,
-          summary: result.summary,
-          status: 'PENDING'
-        });
       } catch (error) {
         console.error(error);
       } finally {
         setLoading(false);
       }
+    }
+  };
+
+  const handleFinalize = async () => {
+    if (!selectedHospitalId) {
+      toast.error("Please select a destination hospital");
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      await saveTriageRequest({
+        patient_id: user?.id || 'guest_user',
+        hospital_id: selectedHospitalId,
+        symptoms,
+        answers,
+        urgency: triageResult.urgency,
+        doctor_type: triageResult.doctorType,
+        summary: triageResult.summary,
+        status: 'PENDING'
+      });
+      navigate('/dashboard');
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -297,19 +325,42 @@ const AppointmentRequest: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="pt-10 border-t border-outline-variant flex flex-col md:flex-row gap-4">
-                    <button 
-                      onClick={() => navigate('/dashboard')}
-                      className="flex-[2] py-5 bg-primary text-on-primary rounded-2xl font-bold text-lg shadow-[0_4px_0_0_#003ea8] hover:translate-y-[-2px] active:translate-y-[2px] active:shadow-none transition-all"
-                    >
-                      Confirm & Queue Up
-                    </button>
-                    <button 
-                      onClick={() => setStep('input')}
-                      className="flex-1 py-5 rounded-2xl border-2 border-outline-variant hover:bg-surface-container font-bold text-outline transition-all"
-                    >
-                      Reset
-                    </button>
+                  <div className="pt-10 border-t border-outline-variant space-y-8">
+                    <div className="space-y-4">
+                      <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.4em] italic">Target Medical Facility</h3>
+                      <div className="relative group">
+                        <Building2 className="absolute left-6 top-1/2 -translate-y-1/2 text-outline/50 pointer-events-none" size={18} />
+                        <select 
+                          className="w-full bg-surface border-2 border-outline-variant rounded-2xl pl-16 pr-12 py-5 text-sm font-bold text-on-surface focus:outline-none focus:border-primary appearance-none cursor-pointer transition-all"
+                          value={selectedHospitalId}
+                          onChange={(e) => setSelectedHospitalId(e.target.value)}
+                        >
+                          <option value="" disabled>-- Select Destination Node --</option>
+                          {Array.isArray(hospitals) && hospitals.map(h => (
+                            <option key={h.uid} value={h.uid}>
+                              {h.displayName}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 text-outline/50 pointer-events-none" size={18} />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col md:flex-row gap-4">
+                      <button 
+                        onClick={handleFinalize}
+                        disabled={loading || !selectedHospitalId}
+                        className="flex-[2] py-5 bg-primary text-on-primary rounded-2xl font-bold text-lg shadow-[0_4px_0_0_#003ea8] hover:translate-y-[-2px] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-50 disabled:translate-y-0 disabled:shadow-none"
+                      >
+                        {loading ? <Loader2 className="animate-spin mx-auto" /> : "Confirm & Queue Up"}
+                      </button>
+                      <button 
+                        onClick={() => setStep('input')}
+                        className="flex-1 py-5 rounded-2xl border-2 border-outline-variant hover:bg-surface-container font-bold text-outline transition-all"
+                      >
+                        Reset
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -321,7 +372,7 @@ const AppointmentRequest: React.FC = () => {
                 <div className="space-y-2">
                   <h4 className="font-bold text-on-surface">Transmission Complete</h4>
                   <p className="text-sm text-on-surface-variant leading-relaxed font-medium">
-                    Your diagnostic data has been securely transmitted to the {triageResult.doctorType} department at City General Hospital. You will be notified via SMS/Push when your node is next in line.
+                    Your diagnostic data has been securely transmitted to the {triageResult.doctorType} department at {Array.isArray(hospitals) ? (hospitals.find(h => h.uid === selectedHospitalId)?.displayName || 'the selected facility') : 'the selected facility'}. You will be notified via SMS/Push when your node is next in line.
                   </p>
                 </div>
               </div>

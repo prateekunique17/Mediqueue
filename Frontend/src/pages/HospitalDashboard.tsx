@@ -32,8 +32,13 @@ const HospitalDashboard: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   const [showDocModal, setShowDocModal] = useState(false);
+  const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
+  const [selectedDoctor, setSelectedDoctor] = useState<any>(null);
+  const [availabilitySlots, setAvailabilitySlots] = useState<any[]>([]);
+  
   const [docForm, setDocForm] = useState({ name: '', specialty: 'General Physician' });
   const [assignForm, setAssignForm] = useState({ doctorId: '', appointmentDate: '' });
+  const [newSlot, setNewSlot] = useState({ start: '08:00', end: '12:00' });
 
   useEffect(() => {
     fetchData();
@@ -115,6 +120,36 @@ const HospitalDashboard: React.FC = () => {
         fetchData();
       }
     } catch (error) { toast.error("Delete failed"); }
+  };
+
+  const handleManageAvailability = (doc: any) => {
+    setSelectedDoctor(doc);
+    setAvailabilitySlots(doc.availability || []);
+    setShowAvailabilityModal(true);
+  };
+
+  const addTimeSlot = () => {
+    setAvailabilitySlots([...availabilitySlots, newSlot]);
+  };
+
+  const removeTimeSlot = (index: number) => {
+    setAvailabilitySlots(availabilitySlots.filter((_, i) => i !== index));
+  };
+
+  const saveAvailability = async () => {
+    if (!selectedDoctor) return;
+    try {
+      const res = await fetch(`/api/hospital/doctors/${selectedDoctor.id}/availability`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slots: availabilitySlots }),
+      });
+      if (res.ok) {
+        toast.success("Availability updated");
+        setShowAvailabilityModal(false);
+        fetchData();
+      }
+    } catch (error) { toast.error("Failed to save availability"); }
   };
 
   const getUrgencyStyles = (urgency: string) => {
@@ -312,14 +347,46 @@ const HospitalDashboard: React.FC = () => {
                               </select>
                             </div>
                             <div className="flex flex-col gap-1.5">
-                              <label className="text-[10px] font-black text-outline uppercase tracking-widest">Schedule Slot</label>
+                              <label className="text-[10px] font-black text-outline uppercase tracking-widest">Select Date</label>
                               <input 
-                                type="datetime-local" 
-                                value={assignForm.appointmentDate}
-                                onChange={(e) => setAssignForm({...assignForm, appointmentDate: e.target.value})}
+                                type="date" 
+                                value={assignForm.appointmentDate.split('T')[0]}
+                                onChange={(e) => setAssignForm({...assignForm, appointmentDate: e.target.value + 'T' + (assignForm.appointmentDate.split('T')[1] || '08:00')})}
                                 className="w-full p-3 bg-white border border-outline-variant rounded-xl text-sm font-semibold outline-none focus:border-primary transition-all"
                               />
                             </div>
+                            
+                            <div className="flex flex-col gap-1.5">
+                              <label className="text-[10px] font-black text-outline uppercase tracking-widest">Select Availability Slot</label>
+                              <div className="grid grid-cols-1 gap-2">
+                                {assignForm.doctorId ? (
+                                  doctors.find(d => d.id === assignForm.doctorId)?.availability?.length > 0 ? (
+                                    doctors.find(d => d.id === assignForm.doctorId).availability.map((slot: any, idx: number) => (
+                                      <button
+                                        key={idx}
+                                        onClick={() => {
+                                          const datePart = assignForm.appointmentDate.split('T')[0] || new Date().toISOString().split('T')[0];
+                                          setAssignForm({...assignForm, appointmentDate: `${datePart}T${slot.start}`});
+                                        }}
+                                        className={`p-3 rounded-xl border text-xs font-bold transition-all text-left flex items-center justify-between ${
+                                          assignForm.appointmentDate.includes(slot.start) 
+                                          ? 'border-primary bg-primary/10 text-primary shadow-sm' 
+                                          : 'border-outline-variant hover:border-primary/50 text-outline'
+                                        }`}
+                                      >
+                                        <span>{slot.start} — {slot.end}</span>
+                                        {assignForm.appointmentDate.includes(slot.start) && <CheckCircle2 className="w-4 h-4" />}
+                                      </button>
+                                    ))
+                                  ) : (
+                                    <p className="text-[10px] text-error font-bold italic p-2 italic bg-error/5 rounded-lg border border-error/10">No slots defined for this physician.</p>
+                                  )
+                                ) : (
+                                  <p className="text-[10px] text-outline italic p-2 bg-surface-container rounded-lg border border-outline-variant/30">Select a physician first...</p>
+                                )}
+                              </div>
+                            </div>
+
                             <button 
                               disabled={!assignForm.doctorId || !assignForm.appointmentDate}
                               onClick={() => handleAssign(selectedPatient.id, assignForm.doctorId, assignForm.appointmentDate)}
@@ -438,8 +505,15 @@ const HospitalDashboard: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
                 {doctors.map(doc => (
-                  <div key={doc.id} className="ambient-shadow-card p-6 lg:p-8 flex flex-col items-center text-center relative group">
-                    <button onClick={() => handleDeleteDoctor(doc.id)} className="absolute top-4 right-4 p-2 text-outline hover:text-error lg:opacity-0 group-hover:opacity-100 transition-all">
+                  <div 
+                    key={doc.id} 
+                    onClick={() => handleManageAvailability(doc)}
+                    className="ambient-shadow-card p-6 lg:p-8 flex flex-col items-center text-center relative group cursor-pointer hover:border-primary/50 transition-all border-2 border-transparent"
+                  >
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); handleDeleteDoctor(doc.id); }} 
+                      className="absolute top-4 right-4 p-2 text-outline hover:text-error lg:opacity-0 group-hover:opacity-100 transition-all"
+                    >
                       <Trash2 className="w-4 h-4" />
                     </button>
                     <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6 group-hover:bg-primary group-hover:text-on-primary transition-all duration-300">
@@ -447,9 +521,24 @@ const HospitalDashboard: React.FC = () => {
                     </div>
                     <h4 className="font-bold text-lg mb-1">{doc.name}</h4>
                     <p className="text-[10px] font-bold text-primary uppercase tracking-widest mb-4">{doc.specialization}</p>
-                    <div className="flex items-center gap-2 text-[10px] font-black text-secondary uppercase tracking-[0.2em] bg-secondary/10 px-4 py-1.5 rounded-full border border-secondary/10">
+                    
+                    <div className="space-y-2 w-full">
+                      {doc.availability && doc.availability.length > 0 ? (
+                        <div className="flex flex-wrap justify-center gap-1.5">
+                          {doc.availability.map((slot: any, idx: number) => (
+                            <span key={idx} className="text-[9px] font-bold bg-surface-container px-2 py-1 rounded-md text-outline">
+                              {slot.start} - {slot.end}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-[10px] text-outline italic">No slots defined</p>
+                      )}
+                    </div>
+
+                    <div className="mt-6 flex items-center gap-2 text-[10px] font-black text-secondary uppercase tracking-[0.2em] bg-secondary/10 px-4 py-1.5 rounded-full border border-secondary/10">
                       <div className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></div>
-                      On Duty
+                      Available
                     </div>
                   </div>
                 ))}
@@ -497,6 +586,80 @@ const HospitalDashboard: React.FC = () => {
                 Confirm Onboarding
               </button>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Availability Management Modal */}
+      {showAvailabilityModal && selectedDoctor && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-fade">
+          <div className="bg-white rounded-[2rem] border border-outline-variant p-6 lg:p-10 w-full max-w-md shadow-ambient-elevated">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="font-headline text-2xl font-bold">{selectedDoctor.name}</h2>
+                <p className="text-on-surface-variant text-sm">Manage operative time slots</p>
+              </div>
+              <button onClick={() => setShowAvailabilityModal(false)} className="p-2 hover:bg-surface-container rounded-full transition-colors"><X className="w-5 h-5" /></button>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant/50">
+                <p className="text-[10px] font-black text-outline uppercase tracking-widest mb-4">Add New Slot</p>
+                <div className="flex gap-3 items-end">
+                  <div className="flex-1">
+                    <label className="text-[9px] font-bold text-outline uppercase ml-2 mb-1 block">Start</label>
+                    <input 
+                      type="time" 
+                      value={newSlot.start}
+                      onChange={(e) => setNewSlot({...newSlot, start: e.target.value})}
+                      className="w-full p-2.5 bg-white border border-outline-variant rounded-xl text-xs font-bold"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-[9px] font-bold text-outline uppercase ml-2 mb-1 block">End</label>
+                    <input 
+                      type="time" 
+                      value={newSlot.end}
+                      onChange={(e) => setNewSlot({...newSlot, end: e.target.value})}
+                      className="w-full p-2.5 bg-white border border-outline-variant rounded-xl text-xs font-bold"
+                    />
+                  </div>
+                  <button 
+                    onClick={addTimeSlot}
+                    className="w-10 h-10 bg-primary text-on-primary rounded-xl flex items-center justify-center hover:brightness-110 transition-all"
+                  >
+                    <Plus className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                {availabilitySlots.length === 0 ? (
+                  <p className="text-center py-8 text-outline text-xs italic">No active slots defined for this node.</p>
+                ) : (
+                  availabilitySlots.map((slot, i) => (
+                    <div key={i} className="flex items-center justify-between p-4 bg-surface-container rounded-xl border border-outline-variant/30 group">
+                      <div className="flex items-center gap-3">
+                        <Clock className="w-4 h-4 text-primary" />
+                        <span className="font-bold text-sm text-on-surface">{slot.start} — {slot.end}</span>
+                      </div>
+                      <button onClick={() => removeTimeSlot(i)} className="p-1.5 text-outline hover:text-error opacity-0 group-hover:opacity-100 transition-all">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <button onClick={() => setShowAvailabilityModal(false)} className="flex-1 py-4 text-outline font-bold text-sm">Cancel</button>
+                <button 
+                  onClick={saveAvailability}
+                  className="flex-[2] py-4 bg-primary text-on-primary rounded-xl font-bold shadow-lg shadow-primary/20 hover:brightness-110 transition-all"
+                >
+                  Save Schedule
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

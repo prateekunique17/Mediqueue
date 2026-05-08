@@ -3,6 +3,17 @@ from database import supabase
 
 router = APIRouter(prefix="/api/hospital", tags=["Hospital"])
 
+@router.get("/list")
+async def list_hospitals():
+    if not supabase: return []
+    try:
+        # Fetch all users who are registered as hospitals
+        response = supabase.table("users").select("uid, displayName").eq("role", "hospital").execute()
+        return response.data
+    except Exception as e:
+        print(f"LIST HOSPITALS ERROR: {e}")
+        return []
+
 @router.get("/queue")
 async def get_triage_queue():
     if not supabase: return [] 
@@ -27,11 +38,37 @@ async def add_doctor(doc: dict):
             "name": doc.get("name"),
             "specialization": doc.get("specialty"),
             "experience": 5,
-            "fee": 500
+            "fee": 500,
+            "availability": [] # Initialize with empty slots
         }
+        # Correct insert for MiniSupabase
         response = supabase.table("hospital_doctors").insert(payload)
         return {"status": "success", "data": response.data}
-    except: raise HTTPException(status_code=500, detail="Failed to add doctor")
+    except Exception as e:
+        print(f"ADD DOCTOR ERROR: {e}")
+        raise HTTPException(status_code=500, detail="Failed to add doctor")
+
+@router.get("/doctors/{doc_id}/availability")
+async def get_doctor_availability(doc_id: str):
+    if not supabase: return []
+    try:
+        # Correct select for MiniSupabase
+        response = supabase.table("hospital_doctors").select("availability").eq("id", doc_id).execute()
+        return response.data[0].get("availability") if response.data else []
+    except: return []
+
+@router.post("/doctors/{doc_id}/availability")
+async def update_doctor_availability(doc_id: str, data: dict):
+    if not supabase: return {"status": "error"}
+    try:
+        # data should be {"slots": [{"start": "08:00", "end": "12:00"}, ...]}
+        slots = data.get("slots", [])
+        # Correct order for the custom MiniSupabase client: filter first, then update
+        response = supabase.table("hospital_doctors").eq("id", doc_id).update({"availability": slots})
+        return {"status": "success", "data": response.data}
+    except Exception as e:
+        print(f"AVAILABILITY UPDATE ERROR: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update availability")
 
 @router.delete("/doctors/{doc_id}")
 async def delete_doctor(doc_id: str):
