@@ -11,7 +11,6 @@ import {
   AlertCircle,
   Activity,
   ShieldCheck,
-  Send,
   User,
   HeartPulse,
   Building2,

@@ -9,7 +9,9 @@ export async function generateAiForm(symptoms: string) {
   });
 
   if (!response.ok) throw new Error('Failed to generate medical form');
-  return response.json();
+  const result = await response.json();
+  if (!result.success) throw new Error(result.error?.message || 'AI Generation failed');
+  return result.data;
 }
 
 export async function analyzeTriage(primaryProblem: string, answers: any) {
@@ -20,7 +22,9 @@ export async function analyzeTriage(primaryProblem: string, answers: any) {
   });
 
   if (!response.ok) throw new Error('Failed to analyze triage');
-  return response.json();
+  const result = await response.json();
+  if (!result.success) throw new Error(result.error?.message || 'Triage analysis failed');
+  return result.data;
 }
 
 export async function saveTriageRequest(data: any) {
@@ -31,5 +35,7 @@ export async function saveTriageRequest(data: any) {
   });
 
   if (!response.ok) throw new Error('Failed to save triage');
-  return response.json();
+  const result = await response.json();
+  if (!result.success) throw new Error(result.error?.message || 'Failed to save triage');
+  return result;
 }
